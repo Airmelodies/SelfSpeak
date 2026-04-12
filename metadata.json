@@ -1,0 +1,7 @@
+{
+  "name": "Self-Speak System",
+  "description": "The Language Identity Engine. Achieve conversational fluency about yourself in 30 days.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
