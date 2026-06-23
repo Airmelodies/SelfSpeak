@@ -48,6 +48,7 @@ const App: React.FC = () => {
         name: parsedData.identityTitle || 'Identity Profile',
         html: jsonString,
         timestamp: new Date(),
+        profile: profile, // Save the profile to allow later language transfer
       };
       
       setActiveCreation(newCreation);
@@ -61,14 +62,40 @@ const App: React.FC = () => {
     }
   };
 
-  const handleReset = () => {
-    const confirmReset = window.confirm(
-      "⚠ EXIT PROFILE\n\nYou are about to leave your active identity profile. You can access it again later from your history.\n\nContinue?"
-    );
-    if (confirmReset) {
-      setActiveCreation(null);
-      setIsGenerating(false);
+  const handleDeleteHistory = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this profile?")) {
+      setHistory(prev => prev.filter(c => c.id !== id));
+      if (activeCreation?.id === id) {
+        setActiveCreation(null);
+      }
     }
+  };
+
+  const handleImportHistory = (creation: Creation) => {
+    setHistory(prev => {
+      // Check if it already exists to avoid dupes visually 
+      if (prev.some(c => c.id === creation.id)) {
+        return prev;
+      }
+      return [creation, ...prev];
+    });
+    setActiveCreation(creation);
+  };
+
+  const handleReset = () => {
+    // Exit profile and return to intake. History is auto-saved so no warning needed.
+    setActiveCreation(null);
+    setIsGenerating(false);
+  };
+
+  const handleTranslateProfile = (newLanguage: string) => {
+    if (!activeCreation || !activeCreation.profile) {
+      alert("Cannot translate this profile. The original profile data is missing.");
+      return;
+    }
+    const updatedProfile = { ...activeCreation.profile, targetLanguage: newLanguage };
+    handleGenerate(updatedProfile);
   };
 
   const handleSelectCreation = (creation: Creation) => {
@@ -95,7 +122,7 @@ const App: React.FC = () => {
           </div>
 
           <div className="absolute bottom-8 w-full px-4">
-             <CreationHistory history={history} onSelect={handleSelectCreation} />
+             <CreationHistory history={history} onSelect={handleSelectCreation} onDelete={handleDeleteHistory} onImport={handleImportHistory} />
           </div>
       </div>
 
@@ -104,6 +131,7 @@ const App: React.FC = () => {
         isLoading={isGenerating}
         isFocused={isFocused}
         onReset={handleReset}
+        onTranslate={handleTranslateProfile}
       />
     </div>
   );

@@ -3,13 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { MicrophoneIcon, SpeakerWaveIcon, ArrowPathIcon, ShareIcon, BookOpenIcon, PlayIcon, StopIcon } from '@heroicons/react/24/solid';
+import { MicrophoneIcon, SpeakerWaveIcon, ArrowPathIcon, ShareIcon, BookOpenIcon, PlayIcon, StopIcon, LanguageIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 interface LivePreviewProps {
   creation: any; // Using any for the JSON structure
   isLoading: boolean;
   isFocused: boolean;
   onReset: () => void;
+  onTranslate?: (newLanguage: string) => void;
 }
 
 const AudioRecorder = () => {
@@ -78,7 +80,7 @@ const AudioRecorder = () => {
     );
 };
 
-export const LivePreview: React.FC<LivePreviewProps> = ({ creation, isLoading, isFocused, onReset }) => {
+export const LivePreview: React.FC<LivePreviewProps> = ({ creation, isLoading, isFocused, onReset, onTranslate }) => {
     const [activeTab, setActiveTab] = useState<'script' | 'vocab'>('script');
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
     const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
@@ -200,8 +202,9 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ creation, isLoading, i
         <div className={`fixed z-40 inset-0 md:inset-4 bg-[#09090b] md:rounded-2xl overflow-hidden flex flex-col transition-all duration-700 ${isFocused ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
             <div className="flex items-center justify-between p-4 md:p-6 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md">
                 <div className="flex items-center space-x-4">
-                    <button onClick={onReset} className="p-2 -ml-2 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors" title="Exit Profile">
-                        <ArrowPathIcon className="w-5 h-5" />
+                    <button onClick={onReset} className="flex items-center space-x-2 p-2 -ml-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors" title="Restart App">
+                        <ArrowLeftIcon className="w-5 h-5" />
+                        <span className="text-sm font-medium hidden sm:inline">Back Home</span>
                     </button>
                     <div>
                         <h2 className="text-lg font-bold text-white leading-tight">{data.identityTitle}</h2>
@@ -213,8 +216,39 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ creation, isLoading, i
                         <BookOpenIcon className="w-3 h-3 text-green-500" />
                         <span>{data.vocabulary.length} TERMS PULLED</span>
                     </div>
-                    <button className="flex items-center space-x-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-medium text-white transition-colors">
-                        <ShareIcon className="w-4 h-4" />
+                    {creation.profile && onTranslate && (
+                        <div className="relative group">
+                            <select 
+                                className="appearance-none flex items-center space-x-2 px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 hover:border-blue-500/50 rounded-lg text-xs font-medium transition-colors cursor-pointer outline-none"
+                                value=""
+                                onChange={(e) => {
+                                    if(e.target.value) {
+                                        onTranslate(e.target.value);
+                                    }
+                                }}
+                            >
+                                <option value="" disabled>Translate &amp; Transfer...</option>
+                                <option value="Spanish">Spanish</option>
+                                <option value="Japanese">Japanese</option>
+                                <option value="Portuguese">Portuguese</option>
+                                <option value="Italian">Italian</option>
+                                <option value="French">French</option>
+                            </select>
+                        </div>
+                    )}
+                    <button 
+                        onClick={() => {
+                            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(creation));
+                            const downloadAnchorNode = document.createElement('a');
+                            downloadAnchorNode.setAttribute("href", dataStr);
+                            downloadAnchorNode.setAttribute("download", `profile_${creation.id?.substring(0, 8) || 'export'}.json`);
+                            document.body.appendChild(downloadAnchorNode);
+                            downloadAnchorNode.click();
+                            downloadAnchorNode.remove();
+                        }}
+                        className="flex items-center space-x-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-medium text-white transition-colors"
+                    >
+                        <ArrowDownTrayIcon className="w-4 h-4" />
                         <span className="hidden sm:inline">Export Profile</span>
                     </button>
                 </div>

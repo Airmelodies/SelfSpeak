@@ -4,14 +4,14 @@
 */
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
-const GEMINI_MODEL = 'gemini-3-pro-preview';
+const GEMINI_MODEL = 'gemini-3.1-pro-preview';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const SYSTEM_INSTRUCTION = `You are the "Self-Speak Engine", an advanced linguistic AI.
 
 YOUR GOAL:
-Generate a personalized "Day 1" language profile.
+Generate a personalized "Day 1" language profile in the user's REQUESTED TARGET LANGUAGE.
 
 INPUT:
 User profile data including: Target Language, Gender, Name, Profession, Passion, Travel, Family, Routine, Environment, Diet, Essentials, Goals, Stories, Motivation, and Personality.
@@ -20,20 +20,20 @@ OUTPUT FORMAT:
 Return strictly a JSON object matching this schema:
 
 {
-  "targetLanguage": "string",
+  "targetLanguage": "string (the language requested by the user)",
   "gender": "string (Male or Female)",
   "identityTitle": "string (Creative title based on their persona)",
   "scriptSegments": [
     {
-      "target": "string (The native script. Kanji/Kana for Japanese, Hanzi for Chinese, Ge'ez for Amharic, etc.)",
-      "transliteration": "string (REQUIRED for non-Latin scripts: Romanized text e.g. Romaji, Pinyin, or Amharic transliteration)",
-      "phonetic": "string (Phonetic pronunciation guide)",
+      "target": "string (The native script of the TARGET LANGUAGE. Kanji/Kana for Japanese, Hanzi for Chinese, Ge'ez for Amharic, Latin for Spanish/French, etc.)",
+      "transliteration": "string (REQUIRED for non-Latin scripts: Romanized text e.g. Romaji, Pinyin, or Amharic transliteration, for Latin scripts leave blank)",
+      "phonetic": "string (Phonetic pronunciation guide for an English speaker)",
       "native": "string (English translation of this specific segment)"
     }
   ],
   "vocabulary": [
     {
-      "term": "string (The target language word in native script)",
+      "term": "string (The TARGET LANGUAGE word in native script)",
       "transliteration": "string (REQUIRED: Romanized version if non-Latin)",
       "native": "string (English meaning)",
       "type": "string (Category e.g., Identity, Action, Object, Dream)"
@@ -43,17 +43,16 @@ Return strictly a JSON object matching this schema:
 }
 
 IMPORTANT GUIDELINES:
-1. **Tone & Sentence Structure**: NATURAL, FLUENT, and ARTICULATE.
+1. **CRITICAL: Language Accuracy**: You MUST generate the text in the precise Target Language requested. Do not default to the examples! If the Target Language is Spanish, output Spanish. If Portuguese, output Portuguese. 
+2. **Tone & Sentence Structure**: NATURAL, FLUENT, and ARTICULATE.
    - **Do NOT be robotic**. Use complex sentences with connecting words (while, because, additionally).
    - **Narrative Depth**: The script must be a substantial "Life Story" (approx. 400-600 words).
    - **Integration**: Explicitly weave the user's Name, Travel memories, Family members, Daily quirks, and Goals into a cohesive narrative. It should feel like a biography they would tell a close friend.
 
-2. **Content & Vocabulary**: 
-   - **Vocabulary List**: The "vocabulary" array MUST be very comprehensive (20-30 items).
-     - **EXTRACT ALL** key nouns and verbs used in the story.
-     - **REQUIRED**: Every vocabulary item MUST have a "transliteration" field if the target language is non-Latin (like Amharic or Japanese).
-
-3. **Amharic Specifics**: If the language is Amharic, use the Ge'ez script for "target" and "term", and provide standard Romanization in "transliteration".
+3. **Content & Vocabulary**: 
+   - **Vocabulary List**: The "vocabulary" array MUST be exhaustive. Extract an extensive list of vocabulary words and expressions used in the narrative, aiming for 50 to 100 items if possible.
+   - **EXTRACT ALL** key nouns, verbs, adjectives, conjugations, and full idiomatic phrases.
+   - **REQUIRED**: Every vocabulary item MUST have a "transliteration" field if the target language is non-Latin.
 
 4. **Alignment**: Break the script into small, meaningful segments (1-4 words) for perfect alignment.
 
@@ -85,6 +84,9 @@ export interface UserProfile {
 
 export async function generateIdentityProfile(profile: UserProfile): Promise<string> {
   const prompt = `
+    !! STRICT REQUIREMENT !!
+    THE OUTPUT MUST BE ENTIRELY TRANSLATED AND WRITTEN IN: *** ${profile.targetLanguage.toUpperCase()} ***. Do NOT default to Japanese or any other language unless explicitly requested.
+
     Target Language: ${profile.targetLanguage}
     Voice Gender: ${profile.gender}
     User Name: ${profile.name}
@@ -102,10 +104,10 @@ export async function generateIdentityProfile(profile: UserProfile): Promise<str
     Personality/Traits: ${profile.personality}
     
     TASK:
-    Generate a LONG (400-600 words) and detailed self-introduction narrative.
+    Generate a LONG (400-600 words) and detailed self-introduction narrative in ${profile.targetLanguage.toUpperCase()}.
     Ensure every detail provided (Name, Travel, Quirk, etc.) is incorporated naturally.
-    Ensure non-Latin scripts (Amharic, Japanese, Chinese) include 'transliteration' in the vocabulary list and segments.
-    Extract 20-30 vocabulary words.
+    Ensure non-Latin scripts include 'transliteration' in the vocabulary list and segments.
+    Extract as much vocabulary as possible (50-100 words/phrases) from the narrative.
   `;
 
   try {

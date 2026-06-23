@@ -24,7 +24,7 @@ interface InputAreaProps {
 const STEPS = [
   { id: 'gender', question: "Select your voice identity", type: 'select', options: ['Male', 'Female'] },
   { id: 'name', question: "What is your name?", placeholder: "e.g., Alex, Yuki, Sarah" },
-  { id: 'target', question: "What language do you want to embody?", placeholder: "e.g., Spanish, Japanese, French" },
+  { id: 'target', question: "Which language do you want to embody?", type: 'select', options: ['Spanish', 'Japanese', 'Portuguese', 'Italian', 'French'] },
   { id: 'profession', question: "What is your work or calling?", placeholder: "e.g., UX Designer, Nurse, Student" },
   { id: 'passion', question: "What are you obsessed with?", placeholder: "e.g., Indie Rock, Hiking, Cooking Pasta" },
   { id: 'travel', question: "Describe a travel memory or dream destination.", placeholder: "e.g., Hiking in Patagonia, Cafe in Paris" },
@@ -78,7 +78,18 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
     if (!audioRef.current || audioError) return;
 
     const audio = audioRef.current;
-    audio.play().catch(() => console.warn("User interaction needed for audio start."));
+    try {
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn("Audio play failed:", err);
+          setAudioError(true);
+        });
+      }
+    } catch (err) {
+      console.warn("Audio play synchronous error:", err);
+      setAudioError(true);
+    }
     
     let vol = audio.volume;
     fadeIntervalRef.current = window.setInterval(() => {
@@ -110,20 +121,33 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
   };
 
   const startAudioIfFirstInteraction = () => {
-    if (currentStep === 0 && !isMusicPlaying) {
+    if (currentStep === 0 && !isMusicPlaying && !audioError) {
       setIsMusicPlaying(true);
       fadeInAudio();
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [STEPS[currentStep].id]: e.target.value });
+    const val = e.target.value;
+    setFormData(prev => ({ ...prev, [STEPS[currentStep].id]: val }));
     startAudioIfFirstInteraction();
   };
 
   const handleSelectChange = (value: string) => {
-    setFormData({ ...formData, [STEPS[currentStep].id]: value });
+    setFormData(prev => ({ ...prev, [STEPS[currentStep].id]: value }));
     startAudioIfFirstInteraction();
+    
+    // Auto-advance for select inputs to improve UX correctly outside of the state updater
+    setTimeout(() => {
+      setCurrentStep(prevStep => {
+        if (prevStep < STEPS.length - 1) {
+          return prevStep + 1;
+        } else {
+          // Fallback if they were on the last step (though gender is step 0)
+          return prevStep; 
+        }
+      });
+    }, 350);
   };
 
   const handleNext = () => {
@@ -161,7 +185,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
 
   const toggleVibe = () => {
     if (audioError) {
-      alert("Error: 'vibe.mp3' not found. Ambiance is unavailable.");
+      // Gracefully do nothing if audio is broken
       return;
     }
     if (isMusicPlaying) {
@@ -197,6 +221,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
               <span className="text-zinc-400 shrink-0">Sequence {currentStep + 1}/{STEPS.length}</span>
               {currentStep > 0 && (
                 <button 
+                  type="button"
                   onClick={handleResetTrigger}
                   className="ml-4 flex items-center space-x-1 text-zinc-600 hover:text-red-500 transition-colors"
                   title="Reset all fields"
@@ -209,6 +234,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
             
             <div className="flex items-center space-x-4">
               <button 
+                type="button"
                 onClick={toggleVibe}
                 className={`flex items-center space-x-2 transition-all duration-300 ${isMusicPlaying ? 'text-blue-400' : 'text-zinc-600 hover:text-zinc-400'}`}
               >
@@ -223,7 +249,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
                   )}
                 </div>
                 <span className="hidden sm:inline font-bold">
-                  {audioError ? 'Audio Error' : isMusicPlaying ? `Ambiance ${Math.round(TARGET_VOLUME * 100)}%` : 'Ambiance Off'}
+                  {audioError ? 'Ambiance Unavailable' : isMusicPlaying ? `Ambiance ${Math.round(TARGET_VOLUME * 100)}%` : 'Ambiance Off'}
                 </span>
               </button>
               <span className="text-zinc-800">|</span>
@@ -238,10 +264,11 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
 
             <div className="relative">
                 {currentStepData.type === 'select' ? (
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 flex-wrap">
                     {currentStepData.options?.map((opt) => (
                       <button
                         key={opt}
+                        type="button"
                         onClick={() => handleSelectChange(opt)}
                         className={`
                           px-6 py-3 rounded-xl border-2 text-lg font-medium transition-all duration-300
@@ -265,7 +292,6 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
                       placeholder={currentStepData.placeholder}
                       className="w-full bg-transparent border-b-2 border-zinc-800 text-xl md:text-2xl text-white pb-4 placeholder-zinc-700 focus:outline-none focus:border-blue-500 transition-all duration-300"
                       disabled={isGenerating || disabled}
-                      autoFocus
                   />
                 )}
             </div>
@@ -275,6 +301,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
             <div>
               {currentStep > 0 && (
                 <button
+                  type="button"
                   onClick={handleBack}
                   disabled={isGenerating}
                   className="group flex items-center space-x-2 px-6 py-3 rounded-full font-medium text-zinc-500 hover:text-white border border-zinc-800 hover:border-zinc-700 transition-all duration-300"
@@ -286,6 +313,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
             </div>
             
             <button
+                type="button"
                 onClick={handleNext}
                 disabled={!formData[currentStepData.id] || isGenerating}
                 className={`
