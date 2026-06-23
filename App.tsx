@@ -54,9 +54,13 @@ const App: React.FC = () => {
       setActiveCreation(newCreation);
       setHistory(prev => [newCreation, ...prev]);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to generate:", error);
-      alert("Could not generate your profile. Please try again.");
+      if (error?.message?.includes("429") || error?.status === "RESOURCE_EXHAUSTED" || error?.message?.includes("quota")) {
+        alert("API Quota Reached. The Gemini model is currently receiving too many requests. Please wait a minute before trying again.");
+      } else {
+        alert("Could not generate your profile. Please try again or check your API key if you are running locally.");
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -64,11 +68,9 @@ const App: React.FC = () => {
 
   const handleDeleteHistory = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this profile?")) {
-      setHistory(prev => prev.filter(c => c.id !== id));
-      if (activeCreation?.id === id) {
-        setActiveCreation(null);
-      }
+    setHistory(prev => prev.filter(c => c.id !== id));
+    if (activeCreation?.id === id) {
+      setActiveCreation(null);
     }
   };
 

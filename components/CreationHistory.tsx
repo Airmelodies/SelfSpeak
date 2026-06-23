@@ -2,8 +2,8 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import React, { useRef } from 'react';
-import { ClockIcon, UserIcon, ArrowRightIcon, TrashIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import React, { useRef, useState } from 'react';
+import { ClockIcon, UserIcon, ArrowRightIcon, TrashIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { UserProfile } from '../services/gemini';
 
 export interface Creation {
@@ -24,6 +24,7 @@ interface CreationHistoryProps {
 
 export const CreationHistory: React.FC<CreationHistoryProps> = ({ history, onSelect, onDelete, onImport }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleExport = (creation: Creation, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -92,17 +93,30 @@ export const CreationHistory: React.FC<CreationHistoryProps> = ({ history, onSel
                   <div className="p-1.5 bg-zinc-800 rounded group-hover:bg-zinc-700 transition-colors border border-zinc-700/50">
                       <UserIcon className="w-4 h-4 text-blue-400" />
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 relative z-20">
                     <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400">
                       {item.timestamp.toLocaleDateString()}
                     </span>
                     <div className="flex space-x-1 mt-1 bg-zinc-800/80 rounded-lg border border-zinc-700/50 p-1">
-                      <button onClick={(e) => handleExport(item, e)} className="p-1.5 text-zinc-400 hover:text-blue-400 rounded hover:bg-zinc-700 transition-colors" title="Export as JSON">
-                        <ArrowDownTrayIcon className="w-4 h-4" />
-                      </button>
-                      <button onClick={(e) => onDelete && onDelete(item.id, e)} className="p-1.5 text-zinc-400 hover:text-red-500 rounded hover:bg-zinc-700 transition-colors" title="Delete Profile">
-                        <TrashIcon className="w-4 h-4" />
-                      </button>
+                      {deletingId === item.id ? (
+                          <>
+                             <button onClick={(e) => { e.stopPropagation(); onDelete && onDelete(item.id, e); setDeletingId(null); }} className="p-1 text-red-400 hover:text-red-300 rounded hover:bg-zinc-700 transition-colors" title="Confirm Delete">
+                               <CheckIcon className="w-4 h-4" />
+                             </button>
+                             <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); }} className="p-1 text-zinc-400 hover:text-zinc-300 rounded hover:bg-zinc-700 transition-colors" title="Cancel">
+                               <XMarkIcon className="w-4 h-4" />
+                             </button>
+                          </>
+                      ) : (
+                          <>
+                              <button onClick={(e) => handleExport(item, e)} className="p-1.5 text-zinc-400 hover:text-blue-400 rounded hover:bg-zinc-700 transition-colors" title="Export as JSON">
+                                <ArrowDownTrayIcon className="w-4 h-4" />
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); setDeletingId(item.id); }} className="p-1.5 text-zinc-400 hover:text-red-500 rounded hover:bg-zinc-700 transition-colors" title="Delete Profile">
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                          </>
+                      )}
                     </div>
                   </div>
                 </div>

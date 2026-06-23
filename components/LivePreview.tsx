@@ -133,7 +133,19 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ creation, isLoading, i
         else if (normalized.includes('korean')) code = 'ko';
         else if (normalized.includes('amharic')) code = 'am'; 
         
-        const langVoices = voices.filter(v => v.lang.startsWith(code));
+        let langVoices = voices.filter(v => v.lang.startsWith(code));
+        
+        // Prioritize high-quality Microsoft/Google voices
+        langVoices.sort((a, b) => {
+            const aHQ = a.name.includes("Microsoft") || a.name.includes("Google") ? 1 : 0;
+            const bHQ = b.name.includes("Microsoft") || b.name.includes("Google") ? 1 : 0;
+            // Additional boost explicitly for Microsoft as requested
+            const aMic = a.name.includes("Microsoft") ? 1 : 0;
+            const bMic = b.name.includes("Microsoft") ? 1 : 0;
+            
+            return (bHQ + bMic) - (aHQ + aMic);
+        });
+
         const maleKeywords = ['male', 'david', 'mark', 'paul', 'ichiro', 'guy', 'daniel', 'stefan', 'pavel', 'george', 'thomas', 'henri', 'diego', 'marco', 'keita', 'yun', 'andrew', 'james', 'robert'];
         const femaleKeywords = ['female', 'zira', 'hazel', 'aria', 'elena', 'laura', 'anna', 'nanami', 'sandra', 'shiori', 'martha', 'sophie', 'lucia', 'haruka', 'min', 'lisa', 'sarah', 'mary'];
 

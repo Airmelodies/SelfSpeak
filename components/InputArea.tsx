@@ -24,7 +24,7 @@ interface InputAreaProps {
 const STEPS = [
   { id: 'gender', question: "Select your voice identity", type: 'select', options: ['Male', 'Female'] },
   { id: 'name', question: "What is your name?", placeholder: "e.g., Alex, Yuki, Sarah" },
-  { id: 'target', question: "Which language do you want to embody?", type: 'select', options: ['Spanish', 'Japanese', 'Portuguese', 'Italian', 'French'] },
+  { id: 'targetLanguage', question: "Which language do you want to embody?", type: 'select', options: ['Spanish', 'Japanese', 'Portuguese', 'Italian', 'French'] },
   { id: 'profession', question: "What is your work or calling?", placeholder: "e.g., UX Designer, Nurse, Student" },
   { id: 'passion', question: "What are you obsessed with?", placeholder: "e.g., Indie Rock, Hiking, Cooking Pasta" },
   { id: 'travel', question: "Describe a travel memory or dream destination.", placeholder: "e.g., Hiking in Patagonia, Cafe in Paris" },
@@ -39,7 +39,7 @@ const STEPS = [
   { id: 'personality', question: "Describe your vibe in 3 words.", placeholder: "e.g., Energetic, Curious, Calm" }
 ];
 
-const VIBE_MP3_PATH = '/vibe.mp3';
+const VIBE_MP3_PATH = 'vibe.mp3'; // Fallback to relative path which often resolves better if public path is weird M3 path
 const TARGET_VOLUME = 0.25; // Default volume at 25%
 
 export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, disabled = false }) => {
@@ -314,7 +314,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ onGenerate, isGenerating, 
             
             <button
                 type="button"
-                onClick={handleNext}
+                onPointerDown={(e) => { e.preventDefault(); handleNext(); }}
                 disabled={!formData[currentStepData.id] || isGenerating}
                 className={`
                     group flex items-center space-x-2 px-8 py-3 rounded-full font-bold transition-all duration-500
