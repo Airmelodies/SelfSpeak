@@ -85,7 +85,7 @@ export interface UserProfile {
 export async function generateIdentityProfile(profile: UserProfile): Promise<string> {
   const prompt = `
     !! STRICT REQUIREMENT !!
-    THE OUTPUT MUST BE ENTIRELY TRANSLATED AND WRITTEN IN: *** ${profile.targetLanguage.toUpperCase()} ***. Do NOT default to Japanese or any other language unless explicitly requested.
+    THE OUTPUT MUST BE ENTIRELY TRANSLATED AND WRITTEN IN: *** ${(profile.targetLanguage || '').toUpperCase()} ***. Do NOT default to Japanese or any other language unless explicitly requested.
 
     Target Language: ${profile.targetLanguage}
     Voice Gender: ${profile.gender}
@@ -104,7 +104,7 @@ export async function generateIdentityProfile(profile: UserProfile): Promise<str
     Personality/Traits: ${profile.personality}
     
     TASK:
-    Generate a LONG (400-600 words) and detailed self-introduction narrative in ${profile.targetLanguage.toUpperCase()}.
+    Generate a LONG (400-600 words) and detailed self-introduction narrative in ${(profile.targetLanguage || '').toUpperCase()}.
     Ensure every detail provided (Name, Travel, Quirk, etc.) is incorporated naturally.
     Ensure non-Latin scripts include 'transliteration' in the vocabulary list and segments.
     Extract as much vocabulary as possible (50-100 words/phrases) from the narrative.
